@@ -55,8 +55,8 @@
                 <ul class="nav nav-pills flex-column">
                     
                     <li class="nav-item">
-                      <a class="nav-link mb-3 text-white" href="user_queries.html">Users Info</a>
-                      <a class="nav-link active text-white" href="users.html">Users Info</a>
+                      <a class="nav-link active mb-3 text-white" href="user_queries.html">Appointments</a>
+                      <a class="nav-link  text-white" href="users.html">Users Info</a>
                     </li>
                   </ul>
             </div>
@@ -67,7 +67,7 @@
     <div class="container-fluid" id="main_content">
         <div class="row">
             <div class="col-lg-10 ms-auto p-4 overflow-hidden">
-                <h3 class="mb-4">User Info Details</h3>
+                <h3 class="mb-4">Appointments Info Details</h3>
 
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-body">
@@ -84,43 +84,17 @@
                                 <thead class="sticky-top ">
                                   <tr class="bg-dark text-light">
                                     <th scope="col">#</th>
-                                    <th scope="col">UserName</th>
-                                    <th scope="col">Email</th>
-                                    <th scope="col" >Password</th>
+                                    <th scope="col">Chat ID</th>
+                                    <th scope="col">Doctor Email</th>
+                                    <th scope="col" >Patient Email</th>
                                     <!-- <th scope="col" width="28%">Messages</th> -->
-                                    <th scope="col">type</th>
-                                    <th scope="col">Lat</th>
+                                    <th scope="col">Appointment Time</th>
+                                    <th scope="col">Last updated</th>
                                     <th scope="col">Long</th>
                                     <th scope="col">Action</th>
                                   </tr>
                                 </thead>
-                                <tbody>
-                                    <?php 
-                                        $q= "SELECT * FROM `user_queries` ORDER BY `sr_no` DESC";
-                                        $data= mysqli_query($con,$q);
-                                        $i =1;
-
-                                        while($row= mysqli_fetch_assoc($data)){
-
-                                            $seen="";
-                                            if($row['seen']!=1){
-                                                $seen="<a href='?seen=$row[sr_no]' class= 'btn btn-sm rounded-pill btn-primary' >Mark as read</a> <br>";
-                                            }
-                                            $seen.= "<a href='?del=$row[sr_no]' class= 'btn btn-sm rounded-pill btn-danger mt-2' >Delete</a>";
-                                            echo<<<query
-                                                <tr>
-                                                    <td>$i</td>
-                                                    <td>$row[userName]</td>
-                                                    <td>$row[email]</td>
-                                                    <td>$row[password]</td>
-                                                    // <td>$row[type]</td>
-                                                    <td>$row[lat]</td>
-                                                    <td>$seen</td>
-                                                </tr>
-                                                query;
-                                                $i++;
-                                        }
-                                    ?>
+                                <tbody id="userList">
                                 </tbody>
                               </table>
                         </div>
@@ -135,8 +109,288 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
-    <script>
+    
+    <script >
+        // Initialize Firebase
+        var firebaseConfig = {
+            apiKey: "AIzaSyAX9iBigv7h-sbTc6YKxm8ArRcq3D33naE",
+            authDomain: "ezdental-acd94.firebaseapp.com",
+            projectId: "ezdental-acd94",
+            storageBucket: "ezdental-acd94.appspot.com",
+            messagingSenderId: "961540439243",
+            appId: "1:961540439243:web:642d3767eacfca8d35af4e",
+            measurementId: "G-P3ZXEHYLN3"
+        };
+        firebase.initializeApp(firebaseConfig);
 
-    </script>
+        // Initialize Firestore
+        const db = firebase.firestore();
+
+        // Reference to the user collection
+        const usersCollection = db.collection("appointments");
+
+        // // Fetch all records from the users collection
+        // usersCollection.get()
+        //     .then((querySnapshot) => {
+        //         querySnapshot.forEach((doc) => {
+        //             console.log(doc)
+        //                 const userData = doc.data();
+        //                 const { chat_id, chatters, last_message, last_update, } = userData;
+        //                 console.log(userData)
+        //                 const row = `<tr>
+        //                                 <td>${index++}</td>
+        //                                 <td>${chat_id}</td>
+        //                                 <td>${chatters[0]}</td>
+        //                                 <td>${chatters[1]}</td>
+        //                                 <td>${last_message}</td>
+        //                                 <td>${last_update}</td>
+        //                                 <td>
+        //                                     <button class="btn btn-sm btn-primary" onclick="editUser('${email}')"><i class="fas fa-edit"></i></button>
+        //                                     <button class="btn btn-sm btn-danger" onclick="deleteUser('${email}')"><i class="fas fa-trash-alt"></i></button>
+        //                                 </td>
+        //                             </tr>`;
+        //                 console.log(row)
+        //                 tbody.innerHTML += row;
+        //         });
+        //     })
+        //     .catch((error) => {
+        //         console.log("Error getting documents: ", error);
+        //     });
+            // Reference to the tbody element
+
+
+        // Function to fetch data from Firestore and populate tbody
+        function fetchAndPopulateTable() {
+            const tbody = document.getElementById("userList");
+        console.log(tbody)
+            console.log("calling fetch")
+            tbody.innerHTML = "";
+            db.collection("appointments").get()
+                .then((querySnapshot) => {
+                    console.log("hey")
+                    let index = 1;
+                    querySnapshot.forEach((doc) => {
+                        console.log(doc)
+                        const userData = doc.data();
+                        const { chat_id, chatters_email, last_message, last_update, } = userData;
+                        console.log(userData)
+                        const row = `<tr>
+                                        <td>${index++}</td>
+                                        <td>${chat_id}</td>
+                                        <td>${chatters_email[0]}</td>
+                                        <td>${chatters_email[1]}</td>
+                                        <td>${last_message}</td>
+                                        <td>${last_update}</td>
+                                        <td>
+                                        </td>
+                                    </tr>`;
+                        console.log(row)
+                        tbody.innerHTML += row;
+                    });
+                })
+                .catch((error) => {
+                    console.log("Error getting documents: ", error);
+                });
+        }
+
+        // Call the function to fetch data and populate the table
+        // fetchAndPopulateTable();
+        
+        // Add event listener for "Add New" button click
+// const addNewBtn = document.getElementById("addNewBtn");
+// addNewBtn.addEventListener("click", function(event) {
+//     event.preventDefault();
+//     document.getElementById("addUserForm").style.display = "block";
+// });
+
+
+
+function addNewAppointment(userName, email, password, type) {
+        // const tbody = document.getElementById("userList");
+
+        // // Create a new row for the user
+        // const newRow = document.createElement("tr");
+        // newRow.innerHTML = `
+        //     <td>${tbody.children.length + 1}</td>
+        //     <td>${userName}</td>
+        //     <td>${email}</td>
+        //     <td>${password}</td>
+        //     <td>${type}</td>
+        //     <td>
+        //         <button class="btn btn-sm btn-primary" onclick="editUser('${email}')"><i class="fas fa-edit"></i></button>
+        //         <button class="btn btn-sm btn-danger" onclick="deleteUser('${email}')"><i class="fas fa-trash-alt"></i></button>
+        //     </td>
+        // `;
+
+        // // Append the new row to the table body
+        // tbody.appendChild(newRow);
+
+        // Add new user data to Firestore
+        db.collection("users").add({
+            userName: userName,
+            email: email,
+            password: password,
+            type: type
+        })
+        .then((docRef) => {
+            console.log("Document written with ID: ", docRef.id);
+            fetchAndPopulateTable();
+        })
+        .catch((error) => {
+            console.error("Error adding document: ", error);
+        });
+    }
+
+
+// Event listener for form submission
+    // const addUserForm = document.getElementById("addUserForm");
+    // addUserForm.addEventListener("submit", function(event) {
+    //     event.preventDefault();
+
+    //     // Get form values
+    //     const userName = document.getElementById("userNameInput").value;
+    //     const email = document.getElementById("emailInput").value;
+    //     const password = document.getElementById("passwordInput").value;
+    //     const type = document.getElementById("typeInput").value;
+
+    //     // Add new user to the table and Firestore
+    //     addNewUser(userName, email, password, type);
+
+    //     // Reset form fields
+    //     addUserForm.reset();
+
+    //     // Close modal
+    //     const modal = new bootstrap.Modal(document.getElementById("addUserModal"));
+    //     modal.style.display="hide";
+    //     modal.hide();
+    // });
+
+    // edit
+    // Function to handle edit user action
+// Function to handle edit user action
+// Function to handle edit user action
+function editUser(email) {
+    // Query Firestore to find the document with the matching email
+    db.collection("users").where("email", "==", email).get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                const userData = doc.data();
+                const docId = doc.id; // Get the document ID
+
+                // Populate modal with user details
+                document.getElementById("editUserEmail").value = email;
+                document.getElementById("editUserNameInput").value = userData.userName;
+                document.getElementById("editPasswordInput").value = userData.password;
+                document.getElementById("editTypeInput").value = userData.type;
+
+                // Show edit user modal
+                const modal = new bootstrap.Modal(document.getElementById("editUserModal"));
+                modal.show();
+
+                // Add event listener to the edit user form
+                const editUserForm = document.getElementById("editUserForm");
+                editUserForm.addEventListener("submit", function(event) {
+                    event.preventDefault();
+
+                    // Get form values
+                    const updatedUserName = document.getElementById("editUserNameInput").value;
+                    const updatedPassword = document.getElementById("editPasswordInput").value;
+                    const updatedType = document.getElementById("editTypeInput").value;
+
+                    // Update user data in Firestore using the document ID
+                    db.collection("users").doc(docId).update({
+                        userName: updatedUserName,
+                        password: updatedPassword,
+                        type: updatedType
+                    })
+                    .then(() => {
+                        console.log("User document successfully updated!");
+                        // Close modal
+                        modal.hide();
+                        fetchAndPopulateTable();
+                    })
+                    .catch((error) => {
+                        console.error("Error updating user document: ", error);
+                    });
+                });
+            });
+        })
+        .catch((error) => {
+            console.error("Error getting user document: ", error);
+        });
+}
+
+
+
+// Wait for the DOM to fully load
+document.addEventListener("DOMContentLoaded", function() {
+    const tbody = document.getElementById("userList");
+    fetchAndPopulateTable();
+
+    // Add event listener to the edit user form
+    const editUserForm = document.getElementById("editUserForm");
+    editUserForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        // Get form values
+        const email = document.getElementById("editEmailInput").value;
+        const userName = document.getElementById("editUserNameInput").value;
+        const password = document.getElementById("editPasswordInput").value;
+        const type = document.getElementById("editTypeInput").value;
+        if (email) {
+        // Update user data in Firestore
+        db.collection("users").doc(email).update({
+            userName: userName,
+            password: password,
+            type: type
+        })
+        .then(() => {
+            console.log("User document successfully updated!");
+            // Close modal
+            const modal = new bootstrap.Modal(document.getElementById("editUserModal"));
+            modal.hide();
+        })
+        .catch((error) => {
+            console.error("Error updating user document: ", error);
+        });
+    } else {
+        console.error("Email is empty or undefined.");
+    }
+    });
+});
+
+// Function to delete a user document from Firestore using email
+function deleteUser(email) {
+    if (confirm("Are you sure you want to delete this user?")) {
+        // Query Firestore to find the document with the matching email
+        db.collection("users").where("email", "==", email).get()
+            .then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    // Get the document ID
+                    const docId = doc.id;
+                    
+                    // Delete the document using the document ID
+                    db.collection("users").doc(docId).delete()
+                        .then(() => {
+                            console.log("User document successfully deleted!");
+                            // Refresh the table after deletion
+                            fetchAndPopulateTable();
+                        })
+                        .catch((error) => {
+                            console.error("Error deleting user document: ", error);
+                        });
+                });
+            })
+            .catch((error) => {
+                console.error("Error getting user document: ", error);
+            });
+    }
+}
+
+
+
+        
+        
+        </script>
 </body>
 </html>

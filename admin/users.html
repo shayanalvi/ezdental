@@ -229,7 +229,7 @@ const tbody = document.getElementById("userList");
                     let index = 1;
                     querySnapshot.forEach((doc) => {
                         const userData = doc.data();
-                        const { email, password,userName,gender, type } = userData;
+                        const { email, password,userName, gender, type } = userData;
                         const row = `<tr>
                                         <td>${index++}</td>
                                         <td>${userName}</td>
